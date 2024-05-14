@@ -4,12 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="08fe0f1c-0710-4b27-bf61-a7020e49972b" name="Changes" comment="начали делать 2-ую галву">
-      <change afterPath="$PROJECT_DIR$/images/filling1.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/images/filling2.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/srs/logisticmodeling/my_math.py" afterDir="false" />
+    <list default="true" id="08fe0f1c-0710-4b27-bf61-a7020e49972b" name="Changes" comment="отображение расстояний">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ReadMe.md" beforeDir="false" afterPath="$PROJECT_DIR$/ReadMe.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/srs/logisticmodeling/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/srs/logisticmodeling/config.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/srs/logisticshow/cosmetic.py" beforeDir="false" afterPath="$PROJECT_DIR$/srs/logisticshow/cosmetic.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/srs/logisticshow/my_show.py" beforeDir="false" afterPath="$PROJECT_DIR$/srs/logisticshow/my_show.py" afterDir="false" />
@@ -128,12 +125,20 @@
       <option name="project" value="LOCAL" />
       <updated>1715622161050</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="отображение расстояний">
+      <created>1715685782493</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1715685782493</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="2-й день обсуждения, написали письмо" />
     <MESSAGE value="начали делать 2-ую галву" />
-    <option name="LAST_COMMIT_MESSAGE" value="начали делать 2-ую галву" />
+    <MESSAGE value="отображение расстояний" />
+    <option name="LAST_COMMIT_MESSAGE" value="отображение расстояний" />
   </component>
 </project>

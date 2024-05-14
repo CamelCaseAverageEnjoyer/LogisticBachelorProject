@@ -5,13 +5,14 @@ from srs.logisticmodeling.config import *
 from srs.logisticmodeling.my_math import *
 from srs.logisticshow.cosmetic import *
 
-def find_free_place(placed_goods: list, car_dims: [int, int, int], last_dims: [int, int, int], dims: [int, int, int]):
+def find_free_place(placed_goods: list, car_dims: [int, int, int], last_dims: [int, int, int], dims: [int, int, int],
+                    flag_new_column: bool = False):
     if len(placed_goods) == 0:
         return [0, 0, 0]
     last_xyz = placed_goods[-1][1]
-    if last_xyz[2] + last_dims[2] + dims[2] < car_dims[2]:
+    if not flag_new_column and last_xyz[2] + last_dims[2] + dims[2] < car_dims[2]:
         return last_xyz[0:2] + [last_xyz[2] + last_dims[2]]
-    if last_xyz[1] + last_dims[1] + dims[1] < car_dims[1]:
+    if not flag_new_column and last_xyz[1] + last_dims[1] + dims[1] < car_dims[1]:
         return [last_xyz[0], last_xyz[1] + last_dims[1], 0]
     if last_xyz[0] + last_dims[0] + dims[0] < car_dims[0]:
         return [last_xyz[0] + last_dims[0], 0, 0]
@@ -24,20 +25,36 @@ def packaging(available_goods: dict, available_car: str, method: str = "strict")
     placed_goods = []
 
     if method == "strict":
+        total_weight = 0.
         for goods in available_goods.keys():
-            while True:
+            counter = 0
+            for _ in range(available_goods[goods]):
                 tmp = find_free_place(placed_goods=placed_goods, dims=CARGOS[goods].dims,
                                       car_dims=TRUCKS[available_car].dims,
+                                      flag_new_column=True if counter == 0 else False,
                                       last_dims=CARGOS[placed_goods[-1][0]].dims if len(placed_goods) > 0
                                       else [0, 0, 0])
-                if tmp is None or available_goods[goods] <= 0:
+                total_weight += CARGOS[goods].gross_weight
+                if tmp is None:
+                    my_print(f"Товар {goods} не умещается!", "r")
+                    # talk("Мало места!")
                     break
-                placed_goods += [[goods, tmp]]
-                available_goods[goods] -= 1
+                elif total_weight > TRUCKS[available_car].weight:
+                    total_weight -= CARGOS[goods].gross_weight
+                    my_print(f"Товар {goods} слишком тяжёлый!", "r")
+                    # talk("Перегруз!")
+                    break
+                else:
+                    placed_goods += [[goods, tmp]]
+                    counter += 1
+            if counter > 0:
+                my_print(f"Товаров {goods}: {counter} штук", "c")
+        my_print(f"Общий вес: {total_weight} кг (Грузоподъёмность: {TRUCKS[available_car].weight} кг", "m")
 
     if method == "bruteforce":
         """Пока что нет поворота X и Y"""
         voxels = get_voxels_dims(dims=TRUCKS[available_car].dims)
+        print(f"В машине {available_car} столько дециметров по каждому направлению: {voxels}")
         max_value = 0
         best_placed_goods = []
 
@@ -53,8 +70,8 @@ def packaging(available_goods: dict, available_car: str, method: str = "strict")
             comb_dims = [get_voxels_dims(CARGOS[i].dims) for i in comb]
             if PRINT_ALL:
                 print(f"{comb_dims}")
-            tmp = [[[[x, y, z] for _ in comb] for x in range(voxels[0]) for y in range(voxels[1])
-                   for z in range(voxels[2])] for _ in comb]
+            # tmp = [[[[x, y, z] for _ in comb] for x in range(voxels[0]) for y in range(voxels[1])
+            #        for z in range(voxels[2])] for _ in comb]
 
         placed_goods = best_placed_goods
 
@@ -79,10 +96,11 @@ def get_cube_mesh(pos: [int, int, int], dims: [int, int, int], color: str, name:
     z = z.flatten()
     return go.Mesh3d(x=x, y=y, z=z, alphahull=1, flatshading=True, color=color, opacity=alpha, name=name)
 
-def show_cargo_filling(available_goods: dict, available_car: str, method: str = "strict", show_params: str = "") -> None:
+def show_cargo_filling(available_goods: dict, available_car: str, method: str = "strict",
+                       show_params: str = "") -> None:
     """Функция упаковывает груз по кузову грузовой машины и отображает расстановку
     В алгоритмы присутствуют следующие аспекты:
-    1. Нельзя поместить товаров больше чем имеется
+    1. Нельзя поместить товаров больше чем имеется по объёбу и по массе
     2.
     :param available_goods: Перевозимые грузы {Название груза: Количество груза}
     :param available_car: Название грузовой машины
@@ -92,7 +110,7 @@ def show_cargo_filling(available_goods: dict, available_car: str, method: str = 
         raise ValueError(f"Название грузовой машины «{available_car}» не обнаружено в базе данных! Смотри config.py")
     for goods in available_goods:
         if goods not in CARGOS.keys():
-            raise ValueError(f"Название груза «{available_car}» не обнаружено в базе данных! Смотри config.py")
+            raise ValueError(f"Название груза «{goods}» не обнаружено в базе данных! Смотри config.py")
     if method not in ["strict", "bruteforce"]:
         raise ValueError(f"Метод «{method}» не подходит. Смотри описание!")
 
@@ -101,8 +119,9 @@ def show_cargo_filling(available_goods: dict, available_car: str, method: str = 
 
     # Вывод алгоритма
     my_print(f"В машину {available_car} помещено {len(placed_goods)} товаров", "c")
-    for goods in placed_goods:
-        my_print(f"     {goods[0]}: [x={goods[1][0]}, y={goods[1][1]}, z={goods[1][2]}]", "b")
+    if PRINT_ALL:
+        for goods in placed_goods:
+            my_print(f"     {goods[0]}: [x={goods[1][0]}, y={goods[1][1]}, z={goods[1][2]}]", "b")
 
     # Показ моделек
     if method == "strict":
@@ -116,8 +135,8 @@ def show_cargo_filling(available_goods: dict, available_car: str, method: str = 
                               color='grey', name=available_car, alpha=0.4)]
         for seq in [[-1, -1], [-1, 1], [1, -1], [1, 1]]:
             # data += [cylinder(dim[0], dim[1]/2 + dim[1]/2*seq[1], 0, whl_r, whl_h*seq[1], color='grey', opacity=0.8)]
-            data += [get_cube_mesh(pos=[dim[0]/2 + seq[0]*dim[0]/4 - whl_r/2, dim[1]/2 + dim[1]/2*seq[1], whl_r/2], dims=[whl_r, seq[1]*whl_h, -whl_r],
-                                   color='grey', name=available_car, alpha=0.4)]
+            data += [get_cube_mesh(pos=[dim[0]/2 + seq[0]*dim[0]/4 - whl_r/2, dim[1]/2 + dim[1]/2*seq[1], whl_r/2],
+                                   dims=[whl_r, seq[1]*whl_h, -whl_r], color='grey', name=available_car, alpha=0.4)]
         annotation = []
         for goods in placed_goods:
             r0 = goods[1]
@@ -151,19 +170,37 @@ def show_cargo_filling(available_goods: dict, available_car: str, method: str = 
         fig = go.Figure(data=data)
         fig.update_layout(showlegend=True, scene=dict(annotations=annotation,
                                                       aspectmode='manual',
-                                                      # this string can be 'data', 'cube', 'auto', 'manual'
-                                                      # a custom aspectratio is defined as follows:
                                                       aspectratio=dict(x=1,
                                                                        y=(dim[1] + whl_h*2) / (dim[0] + dim[1]*head),
                                                                        z=(dim[2] + whl_r/2) / (dim[0] + dim[1]*head))))
         fig.show()
 
 if __name__ == '__main__':
-    show_cargo_filling(available_goods={"Кофемашина": 100,
-                                        "Мультиварка": 100,
-                                        "Микроволновая печь": 100,
-                                        },
-                       available_car=["Газель Next", "DAF XF95 series"][1],
-                       method=["strict", "bruteforce"][0],
-                       show_params=["", "колёса", "колёса, свободное место"][0])
-    talk()
+    show_cargo_filling(available_car=["Газель Next", "Ford Transit", "ГАЗ Валдай", "MAN TGM 18.250",
+                                      "DAF XF95 series"][3],
+                       show_params=["", "свободное место", "колёса", "колёса, свободное место"][0],
+                       method=["strict", "bruteforce"][0],  # работает только метод strict
+                       available_goods={
+                           # Москва - СПБ [MAN TGM 18.250]
+                           "Кофемашина": 48,
+                           "Мультиварка": 60,
+                           "Микроволновая печь": 60,
+                           # СПБ- Великий новгород - Тверь - Москва [MAN TGM 18.250]
+                           # "Тормозные колодки и диски": 504,
+                           # "Сальники и манжеты": 500,
+                           # "Свечи зажигания": 650,
+                           # Москва - Екатеринбург - Чеблябинск [MAN TGM 18.250]
+                           # "Электрочайники": 198,
+                           # "Малый набор инструментов": 224,
+                           # "Средний набор инструментов": 108,
+                           # "Большой набор инструментов": 56,
+                           # "Профессиональный набор инструментов": 60,
+                           # Екатеринбург - Чеблябинск - Казань - Нижний Новгород - Москва [MAN TGM 18.250]
+                           # "Крепежные детали": 36,
+                           # "Запчасти для насосов 1": 112,
+                           # "Запчасти для насосов 2": 108,
+                           # "Стоматологические фрезы": 112,
+                           # "Комплектующие пылесосов 1": 112,
+                           # "Комплектующие пылесосов 2": 108,
+                       })
+    # talk()
